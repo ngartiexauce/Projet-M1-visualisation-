@@ -1,4 +1,4 @@
-# Projet_Visu_Yassine_Exauc-
+# Projet_Visualisation
 M1 CMI ISI
 
 Le projet a été fait sur visual code
