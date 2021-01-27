@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<head>
+	<meta charset="utf-8">
+	<title>{{title}}</title>
+
+	 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+	<script type="text/javascript" src="https://d3js.org/d3.v6.min.js"></script>
+	{% include "header.html" %}
+</head>
+
+
+<style type="text/css">
+	
+path{
+  stroke: #474747;
+  fill: none;
+}
+
+path.plot {
+  stroke: #FFA319;
+}
+.grid line {
+  stroke: lightgrey;
+  stroke-opacity: 0.7;
+  shape-rendering: crispEdges;
+}
+
+.grid path {
+  stroke-width: 0;
+}
+</style>	
+
+
+<body>
+	<h1 style='text-align:center'>{{title}}</h1>
+		<div>
+		<form method="POST" action="{{url_for('nuage')}}" ,class="form-inline" >
+			<select name="heroes" id="heroes" required>
+				<option value="">--Choisissez un perso--</option>
+				{% for i in range(50) %}
+
+				<option value='{{ best_heroes[i] |string}}'> {{best_heroes[i] |string}}</option>
+				{% endfor %}
+			</select>
+			<label for="nb_heroes">Nombre de Heros (5-50):</label>
+			<input type="number" id="nb_heroes" value="Choisissez un nombre de personnages" name="nb_heroes" min="5"
+				max="50" required>
+			<button type="submit" class="btn btn-primary">Confirmer</button></br>
+		</form>
+
+	</div>
+		<button onclick="update(first_year)" class="btn btn-danger">Avec  1ere Année </button>
+		<button  onclick="update(no_first_year)" class="btn btn-dark ">Sans 1ere Année </button>
+		<button  onclick="update(first_year*(-1))" class="btn btn-success ">Amitié</button>
+
+		
+
+	<div id="chart" class="svg-container"></div>
+  <p>Après avoir selectionné un acteur et un nombre d'acteurs, nous avons en abscisse l'année de la première racontre de l'acteur selectionné avec les acteurs les plus publiés dont le nombre est entré. Et en ordonnée nous avons le nombre de rencontres total.<br><br>En revanche, le rayon du cercle correpond aux nombres de comics en commun la première année<br><br>Ainsi ce graphique permet de mettre en évidence certaines proprietés de l'univers Marvel. Pour un personage donné nous pouvons savoir:<br><br>L'ordre selon lequel il a rencontré les acteurs populaires.<br><br>Ses "meilleurs amis" à  gauche et en haut c'est à dire rencontrés tôt et beaucoup de comics en communs.<br><br>Ses "bons amis" à droitr et en haut, rencontrés tard mais beaucoup de comics.<br><br>Ses "connaissances" à droite en bas rencontrés tard et peu de comics en commun.<br><br>Et enfin ses "mauvais amis" racontrés tôt mais très peu de comics c'est-à-dire que la relation n'a pas marché.<br><br>Ainsi pour un inconditionné de l'univers, en fonction de la relation entre les personnages, il pourrait espérer ou non les revoir souvent ensemble. Par exemple pour une personne qui aimerait bien voir souvent Spiderman et Cable ensemble, y'a très peu de chance que ça arrive souvent.<br><br>On peut également remarquer qu'un personnage comme Captain America a rencontré à ses debuts très peu de personnages actuellement très populaires contrairement à Spider-man.Ce qui nous pousse à croire que Captain America est un personnage beaucoup plus important dans l'univers Marvel que Spider-man même en étant moins publié<br><br>Il serait interessant de ponderé le nombre de parution par la popularité en ce moment. C'est-à-dire si la différence de popularité est énorme la relation compte que pour le personnage le plus populaire(il absorve l'autre). En des termes plus techniques, il faut orienter les relations dans le graphe des heros<br><br>On peut également utiliser ce graphique pour vérifier si la relation a été etablie au cours du temps ou dès le debut en considérant le rayon du cercle comme le nombre de parution la première année.<br><br>Plusieurs interpretations sont possibles surtout pour un connaisseur. <br></p>
+	<script>
+		
+
+
+	var margin = { top: 100, right: 100, bottom: 100, left: 100 },
+      width = 900 - margin.left - margin.right,
+      height = 800 - margin.top - margin.bottom;
+
+
+    var first_year=1;
+    var no_first_year=0;
+
+
+function update(rayon){
+
+
+	d3.select("svg").remove();
+
+    var svg = d3.select("#chart").attr("align", "center")
+      .append("svg")
+      	.attr("width", width + margin.left + margin.right)
+      	.attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform",
+        "translate(" + margin.left + "," + margin.top + ")")
+
+
+
+
+// create a tooltip
+    var tooltip = d3.select("#chart")
+      .append("div")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("background-color", "white")
+      .style("border", "solid")
+      .style("border-width", "2px")
+      .style("border-radius", "5px")
+      .style("padding", "5px")
+      .style('position', 'absolute')
+
+    // Three function that change the tooltip when user hover / move / leave a cell
+    var mouseover = function (event,d) {
+      
+      tooltip.style("opacity", 1)
+    }
+
+    var mouseleave = function (d) {
+      tooltip.style("opacity", 0)
+    }
+
+
+
+
+	d3.csv("{{url_for('nuage_data')}}").then(function (data) {
+
+ 	var x = d3.scaleLinear()
+      .domain(d3.extent(data, function(d) { return d.x; }))
+      .range([ 0, width ]);
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x).ticks(7));
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+      .domain([0, d3.max(data, function(d) { return +d.y; })])
+      .range([ height, 0 ]);
+    svg.append("g")
+      .call(d3.axisLeft(y));
+
+
+
+
+function make_x_gridlines() {		
+    return d3.axisBottom(x)
+        .ticks(4)
+}
+
+// gridlines in y axis function
+function make_y_gridlines() {		
+    return d3.axisLeft(y)
+        .ticks(4)
+} 
+
+
+
+
+	 svg.append('g')
+	    .selectAll("dot")
+	    .data(data)
+	    .enter()
+		.append("text") // append text
+		.attr("x", function (d) { return x(+d.x); }) // set x position of left side of text
+		.attr("y", function (d) { return x(+d.y); }) // set y position of bottom of text
+		.attr("dx", "50px") // set offset x position
+		.attr("dy", ".35em") // set offset y position
+		.text(function (d) { return d.name; })
+		.style("fill", "black") ;// fill the text with the colour black
+
+	console.log(rayon)
+	if(rayon ==-1){
+  // add the X gridlines
+  svg.append("g")			
+      .attr("class", "grid")
+      .attr("transform", "translate(0," + height + ")")
+      .call(make_x_gridlines()
+          .tickSize(-height)
+          .tickFormat("")
+      )
+
+  // add the Y gridlines
+  svg.append("g")			
+      .attr("class", "grid")
+      .call(make_y_gridlines()
+          .tickSize(-width)
+          .tickFormat("")
+      )
+
+
+
+	
+		rayon = 0
+		
+	}
+
+
+
+	 var u =  svg.append("g")
+	      		.attr("stroke", "steelblue")
+	      		.attr("stroke-width", 1.5)
+	      		.attr("fill", "none")
+	     		.selectAll("circle")
+	    		.data(data)
+
+
+	 u
+	    .join("circle")
+	    .merge(u)
+	      .attr("cx", d => x(d.x))
+	      .attr("cy", d => y(d.y))
+	      .attr("r",d => 3+d.z*Math.abs(rayon ));
+
+	  svg.append("g")
+	      .attr("font-family", "sans-serif")
+	      .attr("font-size", 10)
+	    .selectAll("text")
+	    .data(data)
+	    .join("text")
+	      .attr("dy", "0.35em")
+	      .attr("x", d => x(d.x) + 7)
+	      .attr("y", d => y(d.y))
+      .text(d => d.name)
+
+      .on("mouseover", mouseover)
+      .on("mousemove", function (event,d) {
+      tooltip
+        .html("<strong>{{ hero }} </strong> et <strong>"+d.name+" : </strong><br>  "+"Année de rencontre :" + d.x+"<br>Nombre de rencontres cette année là: "+d.z+"<br>Nombre de rencontres total: "+d.y)
+        .style("left", (event.pageX +20 ) + "px")
+        //  event.PageX
+        .style("top", (event.pageY-60) + "px")
+    })
+      .on("mouseleave", mouseleave);
+
+     u
+     .exit()
+     .remove()
+
+
+    });
+
+}
+update(first_year)
+
+   	</script>
+</body>

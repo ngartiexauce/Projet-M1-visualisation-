@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+{% include "header.html" %}
+
+<head>
+	<meta charset="utf-8">
+	<title>{{title}}</title>
+	<script type="text/javascript" src="https://d3js.org/d3.v6.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3.layout.cloud.js"></script>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}">
+
+
+</head>
+
+
+<body>
+	<h1 style='text-align:center'>{{title}}</h1>
+	<div>
+		<form method="POST" action="{{url_for('word_cloud')}}" ,class="form-inline" >
+			<select name="heroes" id="heroes" required>
+				<option value="">--Choisissez un perso--</option>
+				{% for i in range(50) %}
+
+				<option value='{{ best_heroes[i] |string}}'> {{best_heroes[i] |string}}</option>
+				{% endfor %}
+			</select>
+			<label for="nb_heroes">Nombre de Heros (5-50):</label>
+			<input type="number" id="nb_heroes" value="Choisissez un nombre de personnages" name="nb_heroes" min="5"
+				max="50" required>
+			<button type="submit" class="btn btn-primary">Confirmer</button></br>
+		</form>
+
+	</div>
+	<div id="my_dataviz"></div>
+	<script>
+
+		// set the dimensions and margins of the graph
+		var margin = { top: 10, right: 10, bottom: 10, left: 10 },
+			width = 800 - margin.left - margin.right,
+			height = 800 - margin.top - margin.bottom;
+		fontFamily = "Open Sans"
+		fontScale = d3.scaleLinear().range([20, 120]), // Construction d'une échelle linéaire continue qui va d'une font de 20px à 120px
+			fillScale = d3.scaleOrdinal(d3.schemeCategory10); // Construction d'une échelle discrète composée de 10 couleurs différentes
+
+		var svg = d3.select("#my_dataviz").attr("align", "center")
+			.append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g")
+			.attr("transform",
+				"translate(" + margin.left + "," + margin.top + ")");
+		d3.csv("{{url_for('getDataWordCloud')}}").then(function (data) {
+			words = []
+			data.forEach(function (d) { words.push({ "word": d.name, "size": +d.val }); });
+
+			let minSize = d3.min(words, d => d.size);
+			let maxSize = d3.max(words, d => d.size);
+			fontScale.domain([minSize, maxSize]);
+			console.log(words)
+
+
+			// Wordcloud features that are different from one word to the other must be here
+			var layout = d3.layout.cloud()
+				.size([width, height])
+				.words(words.map(function (d) { return { text: d.word, size: +d.size }; }))
+				.padding(10)        //space between words
+				.rotate(function () { return ~~(Math.random() * 2) * 90; })
+				.fontSize(d => fontScale(d.size))
+				.font(fontFamily) // font size of words
+				.on("end", draw);
+			layout.start();
+
+
+			function draw(words) {
+				svg
+					.append("g")
+					.attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
+					.selectAll("text")
+					.data(words)
+					.enter().append("text")
+					.style("font-size", d => d.size + "px")
+					.style("fill", d => fillScale(d.size))
+					.attr("text-anchor", "middle")
+					.style("font-family", "Impact")
+					.attr("transform", function (d) {
+						return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+					})
+					.text(function (d) { return d.text; });
+			}
+
+		});
+
+
+
+
+	</script>
+</body>

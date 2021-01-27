@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <title>{{title}}</title>
+  <script type="text/javascript" src="https://d3js.org/d3.v6.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}">
+  {% include "header.html" %}
+</head>
+<body>
+    <h1 style='text-align:center'>{{title}}</h1>
+
+  <div>
+    <form method="POST" action="{{url_for('barplot')}}">
+      <label for="heros">Nombre de Heros (5-20):</label>
+      
+      <input type="number" id="nb_heroes" value="Choisissez un nombre de personnages" name="nb_heroes" min="5"
+        max="50" required>
+      <button type="submit" class="btn btn-primary">Confirmer</button></br>
+    </form>
+  
+  </div>
+<div id="my_dataviz"></div>
+
+
+<script>
+
+    var margin = { top: 100, right: 100, bottom: 100, left: 100 },
+      width = 800 - margin.left - margin.right,
+      height = 800 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+// Parse the Data
+
+
+
+
+
+d3.csv("{{url_for('barplot2')}}").then(function (data) {
+  console.log(data)
+
+
+  // List of subgroups = header of the csv files = soil condition here
+  var subgroups = [ "a","b","c","d"]
+
+
+  // List of groups = species here = value of the first column called group -> I show them on the X axis
+    var allGroup1 = Array.from(d3.map(data, function(d){return d.hero;}))
+    function onlyUnique(value, index, self) {
+      return self.indexOf(value) === index;
+    } 
+
+
+    var groups= allGroup1.filter(onlyUnique);
+  // Add X axis
+
+  var x = d3.scaleBand()
+      .domain(groups)
+      .range([0, width])
+      .padding([0.2])
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x).tickSizeOuter(0))
+    .selectAll("text")
+      .style("text-anchor", "end")
+
+      .attr("dx", "-.8em")
+      .attr("dy", ".300em")
+      .attr("transform", "rotate(-65)" );
+
+
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([0,  d3.max(data, function(d) { return +d.Total; })])
+    .range([ height, 0 ]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // color palette = one color per subgroup
+  var color = d3.scaleOrdinal()
+    .domain(subgroups)
+    .range(['#C7EFCF','#FE5F55','#EEF5DB',"blue"])
+
+  //stack the data? --> stack per subgroup
+  var stackedData = d3.stack()
+    .keys(subgroups)
+    (data)
+
+
+
+
+
+// create a tooltip
+    var tooltip = d3.select("#my_dataviz").attr("align", "center")
+      .append("div")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("background-color", "white")
+      .style("border", "solid")
+      .style("border-width", "2px")
+      .style("border-radius", "5px")
+      .style("padding", "5px")
+      .style('position', 'absolute')
+
+    // Three function that change the tooltip when user hover / move / leave a cell
+    var mouseover = function (event,d) {
+      
+      tooltip.style("opacity", 1)
+    }
+    // var mousemove = function (event,d) {
+    //   tooltip
+    //     .html("La valeur du degré est: <br>  " + d.val)
+    //     .style("left", (event.pageX) + "px")
+    //     //  event.PageX
+    //     .style("top", (event.pageY) + "px")
+    // }
+    var mouseleave = function (d) {
+      tooltip.style("opacity", 0)
+    }
+
+
+
+
+
+
+
+
+  // ----------------
+  // Create a tooltip
+  // ----------------
+  var tooltip = d3.select("#my_dataviz")
+    .append("div")
+    .style("opacity", 0)
+    .attr("class", "tooltip")
+    .style("background-color", "white")
+    .style("border", "solid")
+    .style("border-width", "1px")
+    .style("border-radius", "5px")
+    .style("padding", "10px")
+
+  // Three function that change the tooltip when user hover / move / leave a cell
+    var mouseover = function (event,d) {
+      
+      tooltip.style("opacity", 1)
+    }
+
+  var mouseleave = function(d) {
+    tooltip
+      .style("opacity", 0)
+  }
+
+
+
+
+// select the svg area
+
+// create a list of keys
+var keys = ["Avant 1960", "1960-1980", "1980-2000", "Après 2000"]
+
+// Usually you have a color scale in your chart already
+
+// Add one dot in the legend for each name.
+var size = 20
+svg.selectAll("mydots")
+  .data(keys)
+  .enter()
+  .append("rect")
+    .attr("x", 100)
+    .attr("y", function(d,i){ return 100 + i*(size+5)}) // 100 is where the first dot appears. 25 is the distance between dots
+    .attr("width", size)
+    .attr("height", size)
+    .style("fill", function(d){ return color(d)})
+
+// Add one dot in the legend for each name.
+svg.selectAll("mylabels")
+  .data(keys)
+  .enter()
+  .append("text")
+    .attr("x", 100 + size*1.2)
+    .attr("y", function(d,i){ return 100 + i*(size+5) + (size/2)}) // 100 is where the first dot appears. 25 is the distance between dots
+    .style("fill", function(d){ return color(d)})
+    .text(function(d){ return d})
+    .attr("text-anchor", "left")
+    .style("alignment-baseline", "middle")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // Show the bars
+  svg.append("g")
+    .selectAll("g")
+    // Enter in the stack data = loop key per key = group per group
+    .data(stackedData)
+    .enter().append("g")
+      .attr("fill", function(d) { return color(d.key); })
+      .selectAll("rect")
+      // enter a second time = loop subgroup per subgroup to add all rectangles
+      .data(function(d) { return d; })
+      .enter().append("rect")
+        .attr("x", function(d) { return x(d.data.hero); })
+        .attr("y", function(d) { return y(d[1]); })
+        .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+        .attr("width",x.bandwidth())
+        .attr("stroke", "grey")
+      .on("mouseover", mouseover)
+      .on("mousemove", function (event,d) {
+      tooltip
+        .html("Le nombre d'apparition <br> de "+d.data.hero+"<br> " + d[1])
+        .style("left", (event.pageX +20 ) + "px")
+        //  event.PageX
+        .style("top", (event.pageY-60) + "px")
+    })
+      .on("mouseleave", mouseleave)
+
+})
+
+</script>
+</body>

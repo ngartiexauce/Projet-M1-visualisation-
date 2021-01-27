@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <title>{{title}}</title>
+  <script type="text/javascript" src="https://d3js.org/d3.v6.min.js"></script>
+  {% include "header.html" %}
+</head>
+
+<body>
+  <h1 style='text-align:center'>{{title}}</h1>
+  <div id="chart" class="svg-container"></div>
+  <div>
+    <form method="POST" action="{{url_for('heatmap')}}">
+      <label for="heros">Nombre de Heros (5-20):</label>
+      
+      <input type="number" id="nb_heroes" value="Choisissez un nombre de personnages" name="nb_heroes" min="5"
+				max="50" required>
+			<button type="submit" class="btn btn-primary">Confirmer</button></br>
+    </form>
+  
+  </div>
+  <div id="my_dataviz"></div>
+
+
+  <script>
+
+    // set the dimensions and margins of the graph
+    var margin = { top: 100, right: 100, bottom: 100, left: 100 },
+      width = 800 - margin.left - margin.right,
+      height = 800 - margin.top - margin.bottom;
+
+    var svg = d3.select("#my_dataviz").attr("align", "center")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform",
+        "translate(" + margin.left + "," + margin.top + ")");
+
+
+// create a tooltip
+    var tooltip = d3.select("#my_dataviz")
+      .append("div")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("background-color", "white")
+      .style("border", "solid")
+      .style("border-width", "2px")
+      .style("border-radius", "5px")
+      .style("padding", "5px")
+      .style('position', 'absolute')
+
+    // Three function that change the tooltip when user hover / move / leave a cell
+    var mouseover = function (event,d) {
+      
+      tooltip.style("opacity", 1)
+    }
+
+    var mouseleave = function (d) {
+      tooltip.style("opacity", 0)
+    }
+
+    //Read the data
+    d3.csv("{{url_for('getDataHeatmap')}}").then(function (data) {
+      var myVars = Array.from(d3.map(data, function(d){return d.name;}))
+      
+    
+    // Build X scales and axis:
+    var x = d3.scaleBand()
+      .range([0, width])
+      .domain(myVars)
+      .padding(0.01);
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x))
+      .selectAll("text")  
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-65)" );
+
+    // Build X scales and axis:
+    var y = d3.scaleBand()
+      .range([height, 0])
+      .domain(myVars)
+      .padding(0.01);
+    svg.append("g")
+      .call(d3.axisLeft(y));
+
+    // Build color scale
+    var myColor = d3.scaleSequential()
+      .interpolator( d3.interpolateRdYlBu)
+      .domain([0, 1000])
+
+
+    
+
+    // add the squares
+    svg.selectAll()
+      .data(data, function (d) { return d.group + ':' + d.name; })
+      .enter()
+      .append("rect")
+      .attr("x", function (d) { return x(d.group) })
+      .attr("y", function (d) { return y(d.name) })
+      .attr("width", x.bandwidth())
+      .attr("height", y.bandwidth())
+      .style("fill", function (d) { return myColor(d.val) })
+      .on("mouseover", mouseover)
+      .on("mousemove", function (event,d) {
+      tooltip
+        .html("</strong>"+ "Nombre de rencontre(s) entre <strong>"+d.group+"</strong>"+ " et <strong>"+d.name +"</strong> : <strong>"+ d.val+"</strong>")
+        .style("left", (event.pageX +20 ) + "px")
+        //  event.PageX
+        .style("top", (event.pageY-60) + "px")
+    })
+      .on("mouseleave", mouseleave)
+
+      
+    });
+  </script>
+</body>

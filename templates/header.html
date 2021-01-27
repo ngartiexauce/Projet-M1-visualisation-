@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Entête</title>
+    <link href="..\static\bootstrap.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}">
+</head>
+
+<body>
+    <div id="footer">
+        <nav class="navbar navbar-expand-lg navbar-light  navbar-fixed-bottom" style="background-color: #DBD5D3;">
+            <a class="navbar-brand" href="#"></a>
+            <img src="..\static\marvel.png" width="100" height="70" class="d-inline-block align-top" alt="">
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('accueil')}}">Accueil</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('hist')}}">Hist</a>
+                    </li>
+
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('word_cloud')}}">Word Cloud </a>
+                    </li>
+                    
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('heatmap')}}">Heatmap</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('radial_chart')}}">Radial Chart</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('courbe')}}">Courbes</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('scatter')}}">Comparaisons Courbes</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('barplot')}}">BarPlot</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{url_for('nuage')}}">Nuage</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+        
+</body>
+
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <title>{{title}}</title>
+  <script type="text/javascript" src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3-scale-radial.js"></script>
+  <link rel="stylesheet" type="text/css" href="">
+
+
+  <style></style>
+</head>
+{% include "header.html" %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}">
+<style type="text/css">
+  #my_dataviz {
+
+    position: center;
+  }
+</style>
+
+
+<body>
+  <h1>{{title}}</h1>
+  <div>
+    <form name='heroes' , value='heroes' method="POST" action="{{url_for('circular_barplot')}}">
+      <select name="heroes" id="heroes">
+        <option value="">--Choisissez un perso--</option>
+        {% for i in range(50) %}
+
+        <option value={{list_heroes[i]}}>{{list_heroes[i]}}</option>
+        {% endfor %}
+
+      </select>
+      <button type="submit" class="btn btn-primary">Confirmer</button></br>
+    </form>
+  </div>
+  <div id="my_dataviz"></div>
+  <script>
+    // code from https://www.datavis.fr/index.php?page=barchart
+
+    // set the dimensions and margins of the graph
+    // set the dimensions and margins of the graph
+    var margin = { top: 100, right: 0, bottom: 0, left: 0 },
+      width = 800 - margin.left - margin.right,
+      height = 800 - margin.top - margin.bottom,
+      innerRadius = 90,
+      outerRadius = Math.min(width, height) / 2; // the outerRadius goes from the middle of the SVG area to the border
+    // append the svg object to the body of the page
+
+
+
+
+
+    chart = {
+      const svg = d3.select("DOM.svg(width, height)")
+        .attr("viewBox", `${-width / 2} ${-height / 2} ${width} ${height}`)
+        .style("width", "100%")
+        .style("height", "auto")
+        .style("font", "10px sans-serif");
+      svg.append("g")
+        .selectAll("g")
+        .data(d3.stack().keys(data.columns.slice(1))(data))
+        .join("g")
+        .attr("fill", d => z(d.key))
+        .selectAll("path")
+        .data(d => d)
+        .join("path")
+        .attr("d", arc);
+
+      svg.append("g")
+        .call(xAxis);
+
+      svg.append("g")
+        .call(yAxis);
+
+      svg.append("g")
+        .call(legend);
+
+      return svg.node();
+    }
+    debugger;
+    d3.csv("{{url_for('barplot2')}}").then(function (data) {
+      data.forEach(function (d) {
+        d.hero = d.hero
+        d['-1960'] = +d['-1960']
+        d['1960-1980'] = +d['1960-1980']
+        d['1980-2000'] = +d['1980-2000']
+        d['2000+'] = +d['2000+']
+        d.total = d['-1960'] + d['1960-1980'] + d['1980-2000'] + d['2000+']
+        return d
+      });
+      debugger;
+
+      arc = d3.arc()
+        .innerRadius(d => y(d[0]))
+        .outerRadius(d => y(d[1]))
+        .startAngle(d => x(d.hero))
+        .endAngle(d => x(d.hero) + x.bandwidth())
+        .padAngle(0.01)
+        .padRadius(innerRadius)
+
+
+      x = d3.scaleBand()
+        .domain(data.map(d => d.hero))
+        .range([0, 2 * Math.PI])
+        .align(0)
+
+      y = d3.scaleRadial()
+        .domain([0, d3.max(data, d => d.total)])
+        .range([innerRadius, outerRadius])
+
+      z = d3.scaleOrdinal()
+        .domain(data.columns.slice(1))
+        .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"])
+
+      xAxis = g => g
+        .attr("text-anchor", "middle")
+        .call(g => g.selectAll("g")
+          .data(data)
+          .enter().append("g")
+          .attr("transform", d => `
+          rotate(${((x(d.hero) + x.bandwidth() / 2) * 180 / Math.PI - 90)})
+          translate(${innerRadius},0)
+        `)
+          .call(g => g.append("line")
+            .attr("x2", -5)
+            .attr("stroke", "#000"))
+          .call(g => g.append("text")
+            .attr("transform", d => (x(d.State) + x.bandwidth() / 2 + Math.PI / 2) % (2 * Math.PI) < Math.PI
+              ? "rotate(90) translate(0,16)"
+              : "rotate(-90) translate(0,-9)")
+            .text(d => d.hero)))
+
+
+    });
+
+
+
+
+  </script>
+</body>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Captain America</title>
+    {% include "header.html" %}
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+  </head>
+  <style>
+    path.arc {
+      opacity: 0.9;
+      transition: opacity 0.5s;
+    }
+
+    path.arc:hover {
+      opacity: 0.7;
+    }
+
+    .axis line, .axis circle  {
+      stroke: #cccccc;
+      stroke-width: 1px
+    }
+
+    .axis circle {
+      fill: none;
+    }
+
+    .r.axis text {
+      text-anchor: end
+    }
+
+    .tooltip {
+      position: absolute;
+      display: none;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 3px;
+      box-shadow: -3px 3px 15px #888;
+      color: white;
+      padding: 6px;
+    }
+  </style>
+
+  <body>
+    <h1 style='text-align:center'>{{title}}</h1>
+
+
+  <div>
+    <form name='heroes', value='heroes' method="POST" action="{{url_for('radial_chart')}}">
+    <select name="heroes" id="heroes">
+      <option value="">--Choisissez un perso--</option>
+      {% for i in range(50) %}
+
+      <option value={{list_heroes[i]}}>{{list_heroes[i]}}</option>
+      {% endfor %}
+      <input class="button" type="submit" name="Confirmer" value="Confirmer" /></br>
+
+  </select>
+</form>
+</div>
+
+
+    <div id="my_dataviz"></div>
+    <script>
+    const width = 960,
+      height = 650,
+      chartRadius = height / 2 - 40;
+
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    let svg = d3.select('#my_dataviz').attr("align","center")
+    .append('svg')
+      .attr('width', width)
+      .attr('height', height)
+      .append('g')
+        .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
+
+  
+
+    const PI = Math.PI,
+      arcMinRadius = 10,
+      arcPadding = 10,
+      labelPadding = -5,
+      numTicks = 10;
+
+// create a tooltip
+var tooltip = d3.select("#my_dataviz")
+      .append("div")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("background-color", "white")
+      .style("border", "solid")
+      .style("border-width", "2px")
+      .style("border-radius", "5px")
+      .style("padding", "5px")
+      .style('position', 'absolute')
+
+    // Three function that change the tooltip when user hover / move / leave a cell
+    var mouseover = function (event,d) {
+      
+      tooltip.style("opacity", 1)
+    }
+    
+    var mouseleave = function (d) {
+      tooltip.style("opacity", 0)
+    }
+    d3.csv('{{url_for("get_top_10")}}').then(function (data) {
+
+      let scale = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.val) * 1.1])
+        .range([0, 2 * PI]);
+
+      let ticks = scale.ticks(numTicks).slice(0, -1);
+      let keys = data.map((d, i) => d.name);
+      //number of arcs
+      const numArcs = keys.length;
+      const arcWidth = (chartRadius - arcMinRadius - numArcs * arcPadding) / numArcs;
+
+      let arc = d3.arc()
+        .innerRadius((d, i) => getInnerRadius(i))
+        .outerRadius((d, i) => getOuterRadius(i))
+        .startAngle(0)
+        .endAngle((d, i) => scale(d))
+
+      let radialAxis = svg.append('g')
+        .attr('class', 'r axis')
+        .selectAll('g')
+          .data(data)
+          .enter().append('g');
+
+      radialAxis.append('circle')
+        .attr('r', (d, i) => getOuterRadius(i) + arcPadding);
+
+      radialAxis.append('text')
+        .attr('x', labelPadding)
+        .attr('y', (d, i) => -getOuterRadius(i) + arcPadding)
+        .text(d => d.name);
+
+      let axialAxis = svg.append('g')
+        .attr('class', 'a axis')
+        .selectAll('g')
+          .data(ticks)
+          .enter().append('g')
+            .attr('transform', d => 'rotate(' + (rad2deg(scale(d)) - 90) + ')');
+
+      axialAxis.append('line')
+        .attr('x2', chartRadius);
+
+      axialAxis.append('text')
+        .attr('x', chartRadius + 10)
+        .style('text-anchor', d => (scale(d) >= PI && scale(d) < 2 * PI ? 'end' : null))
+        .attr('transform', d => 'rotate(' + (90 - rad2deg(scale(d))) + ',' + (chartRadius + 10) + ',0)')
+        .text(d => d);
+
+      //data arcs
+      let arcs = svg.append('g')
+        .attr('class', 'data')
+        .selectAll('path')
+          .data(data)
+          .enter().append('path')
+          .attr('class', 'arc')
+          .style('fill', (d, i) => color(i))
+
+      arcs.transition()
+        .delay((d, i) => i * 200)
+        .duration(1000)
+        .attrTween('d', arcTween);
+
+      arcs.on("mouseover", mouseover)
+      .on("mousemove", function (event,d) {
+      tooltip
+        .html("Nombre de rencontres entre avec"+d.name+"</strong> : <strong>"+d.val+"</strong>")
+        .style("left", (event.pageX +20 ) + "px")
+        //  event.PageX
+        .style("top", (event.pageY-60) + "px")
+    })
+      .on("mouseleave", mouseleave)
+
+
+      function arcTween(d, i) {
+        let interpolate = d3.interpolate(0, d.val);
+        return t => arc(interpolate(t), i);
+      }
+
+      function rad2deg(angle) {
+        return angle * 180 / PI;
+      }
+
+      function getInnerRadius(index) {
+        return arcMinRadius + (numArcs - (index + 1)) * (arcWidth + arcPadding);
+      }
+
+      function getOuterRadius(index) {
+        return getInnerRadius(index) + arcWidth;
+      }
+    });
+    
+  </script>
+  </body>
+</html>
